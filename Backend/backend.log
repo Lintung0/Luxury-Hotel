@@ -1,0 +1,4 @@
+2025/12/01 07:57:50 Berhasil terhubung dengan database MySql
+2025/12/01 07:57:50 Migrasi tabel (AutoMigrate) sukses.
+2025/12/01 07:57:50 🚀 Server berjalan di http://localhost:9000
+2025/12/01 07:57:50 ❌ Gagal menjalankan server: failed to listen: listen tcp4 :9000: bind: address already in use

@@ -100,6 +100,8 @@ const AdminRooms = () => {
   }
 
   const handleEdit = (room) => {
+    console.log('Editing room:', room)
+    console.log('Room Images:', room.Images)
     setEditingRoom(room)
     setFormData({
       room_number: room.RoomNumber || '',
@@ -108,7 +110,37 @@ const AdminRooms = () => {
       description: room.Description || '',
       max_occupancy: room.MaxOccupancy?.toString() || ''
     })
+    const existingImage = room.Images?.[0]?.ImageURL || null
+    const fullImageUrl = existingImage ? `http://127.0.0.1:9000${existingImage}` : null
+    console.log('Image URL:', existingImage, '-> Full URL:', fullImageUrl)
+    setImagePreview(fullImageUrl)
+    setImageFile(null)
     setShowModal(true)
+  }
+
+  const handleRemoveImage = async () => {
+    if (editingRoom?.Images?.[0]?.ID) {
+      if (window.confirm('Are you sure you want to delete this image?')) {
+        try {
+          const imageId = editingRoom.Images[0].ID
+          await fetch(`http://127.0.0.1:9000/api/admin/rooms/${editingRoom.ID}/images/${imageId}`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          })
+          setImagePreview(null)
+          setImageFile(null)
+          loadRooms()
+        } catch (error) {
+          console.error('Failed to delete image:', error)
+          alert('Failed to delete image')
+        }
+      }
+    } else {
+      setImagePreview(null)
+      setImageFile(null)
+    }
   }
 
   const handleDelete = async (id) => {
@@ -238,6 +270,11 @@ const AdminRooms = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Room Image</label>
+                  {editingRoom && editingRoom.Images?.[0] && !imageFile && (
+                    <div className="mb-2 p-2 bg-blue-50 dark:bg-blue-900 rounded">
+                      <p className="text-xs text-blue-700 dark:text-blue-300">Current image: {editingRoom.Images[0].ImageURL}</p>
+                    </div>
+                  )}
                   <input 
                     type="file" 
                     accept="image/*"
@@ -245,8 +282,23 @@ const AdminRooms = () => {
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gold-50 file:text-gold-700 hover:file:bg-gold-100 dark:file:bg-gold-900 dark:file:text-gold-300" 
                   />
                   {imagePreview && (
-                    <div className="mt-2">
-                      <img src={imagePreview} alt="Preview" className="h-32 w-auto rounded-lg border border-gray-300 dark:border-gray-600" />
+                    <div className="mt-2 relative inline-block">
+                      <img 
+                        src={imagePreview} 
+                        alt="Preview" 
+                        className="h-32 w-auto rounded-lg border border-gray-300 dark:border-gray-600"
+                        onError={(e) => {
+                          console.error('Image load error:', e.target.src)
+                          e.target.style.display = 'none'
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                      >
+                        ×
+                      </button>
                     </div>
                   )}
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Choose an image file (JPG, PNG, max 5MB)</p>

@@ -1,7 +1,7 @@
 // src/context/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { login as loginApi, register as registerApi } from '../api/authApi'
-import { saveToken, getToken, removeToken, getRole } from '../utils/auth'
+import { saveToken, getToken, removeToken, getRole, saveUser, getUser } from '../utils/auth'
 
 const AuthContext = createContext()
 
@@ -12,18 +12,9 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initAuth = async () => {
       const token = getToken()
-      if (token) {
-        try {
-          // Decode token untuk mendapatkan user info
-          const payload = JSON.parse(atob(token.split('.')[1]))
-          setUser({
-            id: payload.user_id,
-            role: payload.role
-          })
-        } catch (error) {
-          console.error('Token decode failed:', error)
-          removeToken()
-        }
+      const savedUser = getUser()
+      if (token && savedUser) {
+        setUser(savedUser)
       }
       setLoading(false)
     }
@@ -37,8 +28,17 @@ export const AuthProvider = ({ children }) => {
       const token = response.data?.token || response.token
       const userData = response.data?.user || response.user
       
+      const user = {
+        id: userData.ID,
+        username: userData.Username,
+        email: userData.Email,
+        full_name: userData.FullName,
+        role: userData.Role
+      }
+      
       saveToken(token)
-      setUser(userData)
+      saveUser(user)
+      setUser(user)
       return response
     } catch (error) {
       console.error('Login error:', error)
@@ -49,12 +49,19 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       const response = await registerApi(userData)
-      // Register biasanya tidak langsung login, tapi jika ada token maka login
       const token = response.data?.token || response.token
-      const user = response.data?.user || response.user
+      const userResponse = response.data?.user || response.user
       
-      if (token) {
+      if (token && userResponse) {
+        const user = {
+          id: userResponse.ID,
+          username: userResponse.Username,
+          email: userResponse.Email,
+          full_name: userResponse.FullName,
+          role: userResponse.Role
+        }
         saveToken(token)
+        saveUser(user)
         setUser(user)
       }
       return response

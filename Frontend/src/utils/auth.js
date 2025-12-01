@@ -21,6 +21,22 @@ export const getToken = () => {
  */
 export const removeToken = () => {
   localStorage.removeItem('token')
+  localStorage.removeItem('user')
+}
+
+/**
+ * Simpan user data ke localStorage
+ */
+export const saveUser = (user) => {
+  localStorage.setItem('user', JSON.stringify(user))
+}
+
+/**
+ * Dapatkan user data dari localStorage
+ */
+export const getUser = () => {
+  const user = localStorage.getItem('user')
+  return user ? JSON.parse(user) : null
 }
 
 /**

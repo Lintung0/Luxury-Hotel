@@ -1,7 +1,10 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 
 const Home = () => {
+  const { isAuthenticated } = useAuth()
+  
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-gold-100 via-white to-gold-50 dark:from-gray-900 dark:via-purple-900 dark:to-gray-900">
       {/* Animated background shapes */}
@@ -80,12 +83,14 @@ const Home = () => {
               Join thousands of satisfied guests
             </p>
             <div className="flex gap-4 justify-center">
-              <Link
-                to="/register"
-                className="px-8 py-3 bg-gold-600 hover:bg-gold-700 text-white rounded-lg font-semibold hover:scale-105 transition-all shadow-lg"
-              >
-                Sign Up Now
-              </Link>
+              {!isAuthenticated && (
+                <Link
+                  to="/register"
+                  className="px-8 py-3 bg-gold-600 hover:bg-gold-700 text-white rounded-lg font-semibold hover:scale-105 transition-all shadow-lg"
+                >
+                  Sign Up Now
+                </Link>
+              )}
               <Link
                 to="/rooms"
                 className="px-8 py-3 border-2 border-gold-600 text-gold-600 dark:text-gold-400 rounded-lg font-semibold hover:bg-gold-50 dark:hover:bg-gray-800 hover:scale-105 transition-all"

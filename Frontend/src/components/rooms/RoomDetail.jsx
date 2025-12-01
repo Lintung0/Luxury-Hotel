@@ -10,9 +10,12 @@ const RoomDetail = ({ room, loading }) => {
     return null
   }
 
-  const images = room.Images?.length > 0 ? room.Images : [
-    { ImageURL: 'https://via.placeholder.com/800x600?text=Room+Image', Caption: 'Room View' }
-  ]
+  const images = room.Images?.length > 0 
+    ? room.Images.map(img => ({
+        ...img,
+        ImageURL: `http://127.0.0.1:9000${img.ImageURL}`
+      }))
+    : [{ ImageURL: 'https://via.placeholder.com/800x600?text=Room+Image', Caption: 'Room View' }]
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -23,6 +26,9 @@ const RoomDetail = ({ room, loading }) => {
             src={images[selectedImage]?.ImageURL}
             alt={images[selectedImage]?.Caption || `Room ${room.RoomNumber}`}
             className="w-full h-96 lg:h-[400px] object-cover rounded-lg shadow-lg"
+            onError={(e) => {
+              e.target.src = 'https://via.placeholder.com/800x600?text=Room+Image'
+            }}
           />
         </div>
         <div className="grid grid-cols-2 gap-4">
@@ -38,6 +44,9 @@ const RoomDetail = ({ room, loading }) => {
                 src={image.ImageURL}
                 alt={image.Caption}
                 className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.src = 'https://via.placeholder.com/400x300?text=Room+Image'
+                }}
               />
             </button>
           ))}

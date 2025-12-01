@@ -65,6 +65,9 @@ func main() {
 		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
 	}))
 
+	// 8.1. Serve static files for uploads
+	app.Static("/uploads", "./uploads")
+
 	// 9. Setup Routes
 	routes.SetupRoutes(app, authHandler, roomHandler, bookingHandler, reviewHandler, userHandler, paymentHandler, cfg)
 

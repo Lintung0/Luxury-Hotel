@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -148,12 +150,13 @@ func (h *RoomHandler) CreateRoom(c *fiber.Ctx) error {
 	// Handle file upload
 	file, err := c.FormFile("image")
 	if err == nil && file != nil {
-		// Save file to uploads directory
-		filename := fmt.Sprintf("%d_%s", createdRoom.ID, file.Filename)
-		filepath := fmt.Sprintf("./uploads/rooms/%s", filename)
+		// Generate unique filename without spaces
+		timestamp := time.Now().Unix()
+		sanitizedName := strings.ReplaceAll(file.Filename, " ", "_")
+		filename := fmt.Sprintf("%d_%d_%s", createdRoom.ID, timestamp, sanitizedName)
+		savePath := fmt.Sprintf("./uploads/rooms/%s", filename)
 		
-		if err := c.SaveFile(file, filepath); err == nil {
-			// Create room image record
+		if err := c.SaveFile(file, savePath); err == nil {
 			imageURL := fmt.Sprintf("/uploads/rooms/%s", filename)
 			image := &models.RoomImage{
 				RoomID:    createdRoom.ID,
@@ -164,7 +167,10 @@ func (h *RoomHandler) CreateRoom(c *fiber.Ctx) error {
 		}
 	}
 
-	return utils.RespondSuccess(c, fiber.StatusCreated, "Kamar berhasil dibuat", createdRoom)
+	// Reload room with images
+	finalRoom, _ := h.roomService.GetRoomByID(createdRoom.ID)
+
+	return utils.RespondSuccess(c, fiber.StatusCreated, "Kamar berhasil dibuat", finalRoom)
 }
 
 type UpdateRoomInput struct {
@@ -183,35 +189,40 @@ func (h *RoomHandler) UpdateRoom(c *fiber.Ctx) error {
 		return utils.RespondError(c, fiber.StatusBadRequest, "ID kamar tidak valid")
 	}
 
-	var input UpdateRoomInput
-	if err := c.BodyParser(&input); err != nil {
-		return utils.RespondError(c, fiber.StatusBadRequest, "Format request tidak valid")
-	}
-
 	// Ambil room yang ada terlebih dahulu
 	existingRoom, err := h.roomService.GetRoomByID(uint(roomID))
 	if err != nil {
 		return utils.RespondError(c, fiber.StatusNotFound, "Kamar tidak ditemukan")
 	}
 
+	// Parse multipart form
+	roomNumber := c.FormValue("room_number")
+	roomType := c.FormValue("type")
+	priceStr := c.FormValue("price")
+	description := c.FormValue("description")
+	maxOccupancyStr := c.FormValue("max_occupancy")
+
 	// Update field yang diberikan
-	if input.RoomNumber != "" {
-		existingRoom.RoomNumber = input.RoomNumber
+	if roomNumber != "" {
+		existingRoom.RoomNumber = roomNumber
 	}
-	if input.Type != "" {
-		existingRoom.Type = input.Type
+	if roomType != "" {
+		existingRoom.Type = roomType
 	}
-	if input.Price > 0 {
-		existingRoom.Price = input.Price
+	if priceStr != "" {
+		price, err := strconv.ParseFloat(priceStr, 64)
+		if err == nil && price > 0 {
+			existingRoom.Price = price
+		}
 	}
-	if input.Description != "" {
-		existingRoom.Description = input.Description
+	if description != "" {
+		existingRoom.Description = description
 	}
-	if input.Status != "" {
-		existingRoom.Status = input.Status
-	}
-	if input.MaxOccupancy > 0 {
-		existingRoom.MaxOccupancy = input.MaxOccupancy
+	if maxOccupancyStr != "" {
+		maxOccupancy, err := strconv.Atoi(maxOccupancyStr)
+		if err == nil && maxOccupancy > 0 {
+			existingRoom.MaxOccupancy = maxOccupancy
+		}
 	}
 
 	updatedRoom, err := h.roomService.UpdateRoom(existingRoom)
@@ -219,7 +230,30 @@ func (h *RoomHandler) UpdateRoom(c *fiber.Ctx) error {
 		return utils.RespondError(c, fiber.StatusInternalServerError, "Gagal mengubah kamar")
 	}
 
-	return utils.RespondSuccess(c, fiber.StatusOK, "Kamar berhasil diubah", updatedRoom)
+	// Handle file upload
+	file, err := c.FormFile("image")
+	if err == nil && file != nil {
+		// Generate unique filename without spaces
+		timestamp := time.Now().Unix()
+		sanitizedName := strings.ReplaceAll(file.Filename, " ", "_")
+		filename := fmt.Sprintf("%d_%d_%s", updatedRoom.ID, timestamp, sanitizedName)
+		savePath := fmt.Sprintf("./uploads/rooms/%s", filename)
+		
+		if err := c.SaveFile(file, savePath); err == nil {
+			imageURL := fmt.Sprintf("/uploads/rooms/%s", filename)
+			image := &models.RoomImage{
+				RoomID:    updatedRoom.ID,
+				ImageURL:  imageURL,
+				IsPrimary: true,
+			}
+			h.roomService.AddRoomImage(image)
+		}
+	}
+
+	// Reload room with images
+	finalRoom, _ := h.roomService.GetRoomByID(uint(roomID))
+
+	return utils.RespondSuccess(c, fiber.StatusOK, "Kamar berhasil diubah", finalRoom)
 }
 
 // DeleteRoom: Menghapus kamar (Admin Only)

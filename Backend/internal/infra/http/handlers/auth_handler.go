@@ -5,6 +5,7 @@ import (
 	"backend/internal/domain/models"
 	"backend/pkg/utils"
 	"errors"
+	"log"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/gofiber/fiber/v2"
@@ -72,6 +73,7 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 		if errors.As(err, &mysqlErr) && mysqlErr.Number == 1062 {
 			return utils.RespondError(c, fiber.StatusConflict, "Username atau email sudah digunakan")
 		}
+		log.Println("Register error:", err)
 		return utils.RespondError(c, fiber.StatusInternalServerError, "Gagal mendaftarkan user")
 	}
 	return utils.RespondSuccess(c, fiber.StatusOK, "Pendaftaran berhasil", nil)

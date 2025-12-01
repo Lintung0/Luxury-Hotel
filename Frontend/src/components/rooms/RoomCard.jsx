@@ -8,7 +8,8 @@ const RoomCard = ({ room }) => {
     return null
   }
 
-  const mainImage = room.Images?.[0]?.ImageURL || 'https://via.placeholder.com/400x300?text=Room+Image'
+  const imageUrl = room.Images?.[0]?.ImageURL
+  const mainImage = imageUrl ? `http://127.0.0.1:9000${imageUrl}` : 'https://via.placeholder.com/400x300?text=Room+Image'
   const roomNumber = room.RoomNumber || 'N/A'
   const roomType = room.Type || 'Standard'
   const capacity = room.MaxOccupancy || 1
@@ -23,6 +24,9 @@ const RoomCard = ({ room }) => {
           src={mainImage}
           alt={`Room ${roomNumber}`}
           className="w-full h-48 object-cover transition-transform duration-300 hover:scale-105"
+          onError={(e) => {
+            e.target.src = 'https://via.placeholder.com/400x300?text=Room+Image'
+          }}
         />
         <div className="absolute top-4 right-4">
           <span className="bg-gold-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
